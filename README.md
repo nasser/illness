@@ -6,10 +6,10 @@ Live C#/MSIL disassembler
 Expects `monodis` and `peverify` to be available.
 
 ```
-$ mono path/to/Illness.exe assemly.dll
+$ mono path/to/Illness.exe assembly.dll path/to/other/assemblies...
 ```
 
-Naviate browser to [localhost:2718](http://localhost:2718/) to see C#/MSIL. Contents update when the assemly changes.
+Naviate browser to [localhost:2718](http://localhost:2718/) to see C#/MSIL. Contents update when the assembly changes. If the assembly depends on other assemblies, their directories can be passed in as well. 
 
 ## Building
 Depends on [Mono MDK](http://www.mono-project.com/download/).
@@ -21,7 +21,6 @@ $ xbuild Illness.csproj
 ```
 
 ## Next Steps
-* Cache disassembly results
 * Installation script/instructions
 
 ## Legal
