@@ -20,22 +20,32 @@ using System.Collections.Generic;
 namespace Illness
 {
 	public class Routes : Dictionary<string, Func<HttpListenerContext, string>> { }
-		
+
 	class MainClass
 	{
-		public static string ShellCommand (string cmd, string args)
+		static DefaultAssemblyResolver AssemblyResolver = new DefaultAssemblyResolver ();
+
+		public static string ShellCommand (string cmd, string args, IDictionary<string, string> environment = null)
 		{
 			// http://stackoverflow.com/questions/15234448/run-shell-commands-using-c-sharp-and-get-the-info-into-string
-			Process proc = new Process {
-				StartInfo = new ProcessStartInfo {
-					FileName = cmd,
-					Arguments = args,
-					UseShellExecute = false,
-					RedirectStandardOutput = true,
-					CreateNoWindow = true
-				}
+			var startInfo = new ProcessStartInfo {
+				FileName = cmd,
+				Arguments = args,
+				UseShellExecute = false,
+				RedirectStandardOutput = true,
+				CreateNoWindow = true,
 			};
+
+			if (environment != null) {
+				foreach (var kv in environment) {
+					startInfo.EnvironmentVariables.Add (kv.Key, kv.Value);
+				}
+			}
+
+			Process proc = new Process ();
+			proc.StartInfo = startInfo;
 			proc.Start();
+
 			StringBuilder sb = new StringBuilder ();
 			while (!proc.StandardOutput.EndOfStream) {
 				string line = proc.StandardOutput.ReadLine();
@@ -45,21 +55,32 @@ namespace Illness
 			return sb.ToString ();
 		}
 
+		public static Dictionary<string, string> environment = new Dictionary<string, string>();
+
+		static string cachedMSIL;
+
 		public static string ToMSIL (string assembly)
 		{
-			return ShellCommand ("monodis", assembly);
+			return ShellCommand ("monodis", assembly, environment);
 		}
+
+		static string cachedVerification;
 
 		public static string ToVerification (string assembly)
 		{
-			return ShellCommand ("peverify", assembly);
+			return ShellCommand ("peverify", assembly, environment);
 		}
+
+		static string cachedCSharp;
 
 		public static string ToCSharp (string assembly)
 		{
+			return ToCSharp (assembly, AssemblyResolver);
+		}
+
+		public static string ToCSharp (string assembly, DefaultAssemblyResolver resolver)
+		{
 			FileInfo assemblyFile = new FileInfo (assembly);
-			var resolver = new DefaultAssemblyResolver ();
-			resolver.AddSearchDirectory (assemblyFile.DirectoryName);
 			AssemblyDefinition assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyFile.FullName, new ReaderParameters { AssemblyResolver = resolver });
 
 			AstBuilder astBuilder = new AstBuilder (new DecompilerContext (assemblyDefinition.MainModule));
@@ -69,6 +90,20 @@ namespace Illness
 
 			return output.ToString ();
 		}
+
+		public static DateTime lastWriteTime = new DateTime (0);
+
+		public static void UpdateCaches(string assembly) {
+			var fileInfo = new FileInfo (assembly);
+			if (fileInfo.LastWriteTime > lastWriteTime) {
+				Console.WriteLine ("Disassembling " + assembly);
+				lastWriteTime = fileInfo.LastWriteTime;
+				cachedMSIL = ToMSIL (assembly);
+				cachedCSharp = ToCSharp (assembly);
+				cachedVerification = ToVerification (assembly);
+			}
+		}
+
 			
 		public static void Serve (Dictionary<string, Func<HttpListenerContext, string>> routes)
 		{
@@ -106,21 +141,54 @@ namespace Illness
 			}
 		}
 
+		public static void Usage() {
+			Console.WriteLine ("USAGE illness assembly.dll [directory ...]");
+		}
+
 		public static void Main (string[] args)
 		{
-			string file = args [0];
 			Console.WriteLine("Illness - MSIL Visualizer");
 			Console.WriteLine("Ramsey Nasser, Jan 2016");
+			if (args.Length == 0) {
+				Usage ();
+				return;
+			}
+				
+			string file = args [0];
+			FileInfo fileInfo = new FileInfo (file);
+			string fileDirectory = fileInfo.DirectoryName;
+			string monoPath = ".";
 			Console.WriteLine("Watching " + file);
+
+			AssemblyResolver.AddSearchDirectory (fileDirectory);
+			Console.WriteLine("Resolving from " + fileDirectory);
+			monoPath += fileDirectory;
+
+			for (int i = 1; i < args.Length; i++) {
+				string dir = new FileInfo(args [i]).DirectoryName;
+				AssemblyResolver.AddSearchDirectory (dir);
+				Console.WriteLine("Resolving from " + dir);
+				monoPath += Path.PathSeparator + dir;
+			}
+
+			environment.Add ("MONO_PATH", monoPath);
+
+			var fsw = new FileSystemWatcher (fileDirectory, file);
+			fsw.EnableRaisingEvents = true;
+			fsw.IncludeSubdirectories = false;
+			fsw.Created += (sender, evt) => { UpdateCaches (file); };
+
+			UpdateCaches (file);
 
 			string binDirectory = Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location);
 
 			Serve (new Routes {
 				["/"] 			= ctx => File.ReadAllText(Path.Combine (binDirectory, "public", "index.html")),
-				["/msil"] 		= ctx => ToMSIL(file),
-				["/cs"] 		= ctx => ToCSharp(file),
-				["/peverify"] 	= ctx => ToVerification(file),
-				["/file"] 		= ctx => file
+				["/msil"] 		= ctx => cachedMSIL,
+				["/cs"] 		= ctx => cachedCSharp,
+				["/peverify"] 	= ctx => cachedVerification,
+				["/file"] 		= ctx => file,
+				["/last-write"] = ctx => lastWriteTime.ToString()
 			});
 
 		}
