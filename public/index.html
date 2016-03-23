@@ -56,11 +56,7 @@ hljs.registerLanguage("msil", function(hljs) {
     document.querySelector("code." + lang).parentElement.setAttribute("class", "show");
   }
   
-  window.onload = function() {
-    get("file", function() {
-      document.querySelector("#file").innerHTML = this.response;
-    });
-    
+  function update () {
     get("cs", function() {
       document.querySelector("code.csharp").innerHTML = this.response;
       highlightCode();
@@ -75,29 +71,24 @@ hljs.registerLanguage("msil", function(hljs) {
       document.querySelector("code.peverify").innerHTML = this.response;
       highlightCode();
     });
+  }
+  
+  window.onload = function() {
+    get("file", function() {
+      document.querySelector("#file").innerHTML = this.response;
+    });
+    
+    update();
     
     highlightCode();
     show("csharp");
     
+    var lastWrite = "";
     setInterval(function() {
-      get("cs", function() {
-        if(document.querySelector("code.csharp").textContent != this.response) {
-          document.querySelector("code.csharp").innerHTML = this.response;
-          highlightCode();
-        }
-      });
-      
-      get("msil", function() {
-        if(document.querySelector("code.msil").textContent != this.response) {
-          document.querySelector("code.msil").innerHTML = this.response;
-          highlightCode();
-        }
-      });
-      
-      get("peverify", function() {
-        if(document.querySelector("code.peverify").textContent != this.response) {
-          document.querySelector("code.peverify").innerHTML = this.response;
-          highlightCode();
+      get("last-write", function() {
+        if(this.response != lastWrite) {
+          lastWrite = this.response;
+          update();
         }
       });
     }, 1000);
