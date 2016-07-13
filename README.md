@@ -16,7 +16,7 @@ Depends on [Mono MDK](http://www.mono-project.com/download/).
 
 ```
 $ git clone https://github.com/nasser/illness.git
-$ cs illness
+$ cd illness
 $ xbuild Illness.csproj
 ```
 
