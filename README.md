@@ -30,8 +30,12 @@ $ nuget restore
 $ xbuild Illness.csproj
 ```
 
-## Next Steps
-* Installation script/instructions
+## Installation
+The included `illness` script is designed to be symlinked.
+
+```
+$ ln -s "$(pwd)/illness" ~/bin/illness
+```
 
 ## Legal
 Illness Copyright (c) 2016 Ramsey Nasser. Provided under the [MIT License](https://opensource.org/licenses/MIT)

@@ -1,0 +1,3 @@
+#/bin/bash
+DIR="$(dirname "$(readlink "$0")")"
+mono $DIR/bin/Debug/Illness.exe $@
