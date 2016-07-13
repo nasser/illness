@@ -162,10 +162,10 @@ namespace Illness
 
 			AssemblyResolver.AddSearchDirectory (fileDirectory);
 			Console.WriteLine("Resolving from " + fileDirectory);
-			monoPath += fileDirectory;
+			monoPath += Path.PathSeparator + fileDirectory;
 
 			for (int i = 1; i < args.Length; i++) {
-				string dir = new FileInfo(args [i]).DirectoryName;
+				string dir = args[i];
 				AssemblyResolver.AddSearchDirectory (dir);
 				Console.WriteLine("Resolving from " + dir);
 				monoPath += Path.PathSeparator + dir;
@@ -173,7 +173,7 @@ namespace Illness
 
 			environment.Add ("MONO_PATH", monoPath);
 
-			var fsw = new FileSystemWatcher (fileDirectory, file);
+			var fsw = new FileSystemWatcher (fileDirectory, fileInfo.Name);
 			fsw.EnableRaisingEvents = true;
 			fsw.IncludeSubdirectories = false;
 			fsw.Created += (sender, evt) => { UpdateCaches (file); };
