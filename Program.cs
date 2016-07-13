@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.IO;
+using System.Diagnostics.CodeAnalysis;
 
-using ICSharpCode;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.Ast;
 
@@ -12,7 +12,6 @@ using Mono.Cecil;
 using System.Diagnostics;
 using System.Text;
 using System.Net;
-using System.Threading;
 
 using System.Collections.Generic;
 
@@ -22,7 +21,7 @@ namespace Illness
 
 	class MainClass
 	{
-		static DefaultAssemblyResolver AssemblyResolver = new DefaultAssemblyResolver();
+		static readonly DefaultAssemblyResolver AssemblyResolver = new DefaultAssemblyResolver();
 
 		public static string ShellCommand(string cmd, string args, IDictionary<string, string> environment = null)
 		{
@@ -33,7 +32,7 @@ namespace Illness
 				Arguments = args,
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
-				CreateNoWindow = true,
+				CreateNoWindow = true
 			};
 
 			if (environment != null)
@@ -44,11 +43,11 @@ namespace Illness
 				}
 			}
 
-			Process proc = new Process();
+			var proc = new Process();
 			proc.StartInfo = startInfo;
 			proc.Start();
 
-			StringBuilder sb = new StringBuilder();
+			var sb = new StringBuilder();
 			while (!proc.StandardOutput.EndOfStream)
 			{
 				string line = proc.StandardOutput.ReadLine();
@@ -83,12 +82,12 @@ namespace Illness
 
 		public static string ToCSharp(string assembly, DefaultAssemblyResolver resolver)
 		{
-			FileInfo assemblyFile = new FileInfo(assembly);
+			var assemblyFile = new FileInfo(assembly);
 			AssemblyDefinition assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyFile.FullName, new ReaderParameters { AssemblyResolver = resolver });
 
-			AstBuilder astBuilder = new AstBuilder(new DecompilerContext(assemblyDefinition.MainModule));
+			var astBuilder = new AstBuilder(new DecompilerContext(assemblyDefinition.MainModule));
 			astBuilder.AddAssembly(assemblyDefinition);
-			StringWriter output = new StringWriter();
+			var output = new StringWriter();
 			astBuilder.GenerateCode(new PlainTextOutput(output));
 
 			return output.ToString();
@@ -110,6 +109,7 @@ namespace Illness
 		}
 
 
+		[SuppressMessage("Potential Code Quality Issues", "RECS0135", Justification = "Long running server task")]
 		public static void Serve(Dictionary<string, Func<HttpListenerContext, string>> routes)
 		{
 			// https://gist.github.com/joeandaverde/3994603
@@ -164,7 +164,7 @@ namespace Illness
 			}
 
 			string file = args[0];
-			FileInfo fileInfo = new FileInfo(file);
+			var fileInfo = new FileInfo(file);
 			string fileDirectory = fileInfo.DirectoryName;
 			string monoPath = ".";
 			Console.WriteLine("Watching " + file);
