@@ -1,5 +1,6 @@
 .DS_Store
 ~
+packages/
 build/
 [Bb]in
 [Dd]ebug*/
