@@ -15,6 +15,8 @@ using System.Net;
 
 using System.Collections.Generic;
 
+using Mono.Options;
+
 namespace Illness
 {
 	public class Routes : Dictionary<string, Func<HttpListenerContext, string>> { }
@@ -100,23 +102,33 @@ namespace Illness
 			var fileInfo = new FileInfo(assembly);
 			if (fileInfo.LastWriteTime > lastWriteTime)
 			{
-				Console.WriteLine("Disassembling " + assembly);
-				lastWriteTime = fileInfo.LastWriteTime;
-				cachedMSIL = ToMSIL(assembly);
-				cachedCSharp = ToCSharp(assembly);
-				cachedVerification = ToVerification(assembly);
+				try
+				{
+
+					Log("Disassembling " + assembly);
+					lastWriteTime = fileInfo.LastWriteTime;
+					cachedMSIL = ToMSIL(assembly);
+					cachedCSharp = ToCSharp(assembly);
+					cachedVerification = ToVerification(assembly);
+				}
+				catch (DecompilerException e)
+				{
+					Console.Write(e.Message);
+					Console.WriteLine(e.InnerException.Message);
+					Environment.Exit(1);
+				}
 			}
 		}
 
 
 		[SuppressMessage("Potential Code Quality Issues", "RECS0135", Justification = "Long running server task")]
-		public static void Serve(Dictionary<string, Func<HttpListenerContext, string>> routes)
+		public static void Serve(int port, Dictionary<string, Func<HttpListenerContext, string>> routes)
 		{
 			// https://gist.github.com/joeandaverde/3994603
 			var listener = new HttpListener();
 
-			listener.Prefixes.Add("http://localhost:2718/");
-			listener.Prefixes.Add("http://127.0.0.1:2718/");
+			listener.Prefixes.Add(string.Format("http://localhost:{0}/", port));
+			listener.Prefixes.Add(string.Format("http://127.0.0.1:{0}/", port));
 
 			Console.WriteLine("Listening on " + listener.Prefixes.First());
 
@@ -129,7 +141,7 @@ namespace Illness
 				var response = context.Response;
 				var outputStream = response.OutputStream;
 
-				response.AddHeader("Server", "Illness v0.2");
+				response.AddHeader("Server", "Illness " + Assembly.GetEntryAssembly().GetName().Version);
 
 				if (!routes.ContainsKey(request.RawUrl))
 				{
@@ -148,40 +160,62 @@ namespace Illness
 			}
 		}
 
+		static OptionSet options;
+		static bool verbose = false;
+		static int port = 2718;
+
 		public static void Usage()
 		{
-			Console.WriteLine("USAGE illness assembly.dll [directory ...]");
+			Console.WriteLine("illness [OPTIONS] assembly.dll [directory ...]");
+			options.WriteOptionDescriptions(Console.Out);
+			Environment.Exit(0);
+		}
+
+		public static void Log(string message)
+		{
+			if (verbose)
+				Console.WriteLine(message);
 		}
 
 		public static void Main(string[] args)
 		{
-			Console.WriteLine("Illness - MSIL Visualizer");
-			Console.WriteLine("Ramsey Nasser, Jan 2016");
+			Console.WriteLine(string.Format("Illness {0}", Assembly.GetExecutingAssembly().GetName().Version));
+			Console.WriteLine("Ramsey Nasser, Jan 2016\n");
+
+			options = new OptionSet
+			{
+				{ "v|verbose", "print information while running", v => verbose = true },
+				{ "p|port=", "port to listen on", p => port = int.Parse(p) },
+				{ "h|help", "show help message", h => Usage() }
+			};
+			var pathArgs = options.Parse(args).ToArray();
+
 			if (args.Length == 0)
 			{
 				Usage();
 				return;
 			}
 
-			string file = args[0];
+			string file = pathArgs[0];
 			var fileInfo = new FileInfo(file);
 			string fileDirectory = fileInfo.DirectoryName;
 			string monoPath = ".";
-			Console.WriteLine("Watching " + file);
+			Log("Watching " + file);
 
 			AssemblyResolver.AddSearchDirectory(fileDirectory);
-			Console.WriteLine("Resolving from " + fileDirectory);
+			Log("Resolving from " + fileDirectory);
 			monoPath += Path.PathSeparator + fileDirectory;
 
-			for (int i = 1; i < args.Length; i++)
+			for (int i = 1; i < pathArgs.Length; i++)
 			{
-				string dir = args[i];
+				string dir = pathArgs[i];
 				AssemblyResolver.AddSearchDirectory(dir);
-				Console.WriteLine("Resolving from " + dir);
+				Log("Resolving from " + dir);
 				monoPath += Path.PathSeparator + dir;
 			}
 
 			environment.Add("MONO_PATH", monoPath);
+			Log("MONO_PATH=" + monoPath);
 
 			var fsw = new FileSystemWatcher(fileDirectory, fileInfo.Name);
 			fsw.EnableRaisingEvents = true;
@@ -192,7 +226,7 @@ namespace Illness
 
 			string binDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-			Serve(new Routes
+			Serve(port, new Routes
 			{
 				["/"] = ctx => File.ReadAllText(Path.Combine(binDirectory, "public", "index.html")),
 				["/msil"] = ctx => cachedMSIL,

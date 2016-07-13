@@ -3,20 +3,30 @@
 Live C#/MSIL disassembler
 
 ## Usage
-Expects `monodis` and `peverify` to be available.
+Expects `monodis` and `peverify` commands to be available on your PATH.
 
 ```
-$ mono path/to/Illness.exe assembly.dll path/to/other/assemblies...
+$ mono path/to/Illness.exe assembly.dll path/to/other/assembly/directories...
 ```
 
-Naviate browser to [localhost:2718](http://localhost:2718/) to see C#/MSIL. Contents update when the assembly changes. If the assembly depends on other assemblies, their directories can be passed in as well. 
+The two basic inputs are: the assembly to disassemble and the directories in which to search for references assembly. The current directory and the directory of the target assembly are always included in the search path.
+
+Naviate browser to [localhost:2718](http://localhost:2718/) to see C#/MSIL. Contents update when the assembly changes.
+
+## Options
+```
+  -v, --verbose              print information while running
+  -p, --port=VALUE           port to listen on
+  -h, --help                 show help message
+```
 
 ## Building
-Depends on [Mono MDK](http://www.mono-project.com/download/).
+Depends on [Mono MDK](http://www.mono-project.com/download/) and [NuGet](https://www.nuget.org/).
 
 ```
 $ git clone https://github.com/nasser/illness.git
-$ cs illness
+$ cd illness
+$ nuget restore
 $ xbuild Illness.csproj
 ```
 
