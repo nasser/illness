@@ -127,15 +127,15 @@ namespace Illness
 
 					Log("Disassembling " + assembly);
 					lastWriteTime = fileInfo.LastWriteTime;
-					cachedMSIL = ToMSIL(assembly);
-					cachedCSharp = ToCSharp(assembly);
-					cachedVerification = ToVerification(assembly);
+					cachedVerification = HTMLEncode(ToVerification(assembly));
+					cachedMSIL = HTMLEncode(ToMSIL(assembly));
+					cachedCSharp = HTMLEncode(ToCSharp(assembly));
 				}
 				catch (DecompilerException e)
 				{
 					Console.Write(e.Message);
 					Console.WriteLine(e.InnerException.Message);
-					Environment.Exit(1);
+					//Environment.Exit(1);
 				}
 			}
 		}
@@ -173,7 +173,10 @@ namespace Illness
 				}
 				else {
 					var route = routes[request.RawUrl];
-					var bytes = Encoding.UTF8.GetBytes(route.Invoke(context));
+					string result = route.Invoke(context);
+					if (result == null)
+						result = "";
+					var bytes = Encoding.UTF8.GetBytes(result);
 					outputStream.Write(bytes, 0, bytes.Length);
 					outputStream.Close();
 				}
