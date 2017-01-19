@@ -68,15 +68,16 @@ hljs.registerLanguage("msil", function(hljs) {
     });
     
     get("peverify", function() {
-      document.querySelector("code.peverify").innerHTML = this.response;
+      document.querySelector("div.peverify").innerHTML = this.response;
       highlightCode();
+    });
+    
+    get("file", function() {
+      document.querySelector("#file").innerHTML = this.response;
     });
   }
   
   window.onload = function() {
-    get("file", function() {
-      document.querySelector("#file").innerHTML = this.response;
-    });
     
     update();
     
@@ -96,31 +97,37 @@ hljs.registerLanguage("msil", function(hljs) {
 </script>
   <style type="text/css">
   body {
-    font-family: Menlo, monospace;
+    font-family: monospace;
     font-size: 12pt;
-    margin: 10px;
+    margin: 0px;
+    overflow: hidden;
   }
   
   #body {
-    display: flex;
-    width: 100%;
+    /*display: flex;*/
+    /*width: 100%;*/
     height: 100%;
   }
   
   pre {
-    display: block;
-    position: absolute;
-    left: 0;
-    top: 20px;
+    display: none;
+    /*position: absolute;*/
+    /*left: 0;*/
+    /*top: 20px;*/
     z-index: -10;
     margin: 0;
-    opacity: 0;
+    /*opacity: 0;*/
     height: 100%;
-    width: 100%;
+    /*width: 100%;*/
+  }
+  
+  code {
+    height: 100%;
   }
   
   pre.show {
-    opacity: 1;
+    /*opacity: 1;*/
+    display: block;
   }
   
   #header {
@@ -133,6 +140,16 @@ hljs.registerLanguage("msil", function(hljs) {
   #sidebar ul {
     padding-left: 1em;
   }  
+  
+  .peverify {
+    color: red;
+    position: fixed;
+    bottom: 0;
+    background: white;
+    opacity: 0.9;
+    padding: 1em;
+    white-space: pre-wrap;
+  }
   </style>
 </head>
 <body>
@@ -140,12 +157,12 @@ hljs.registerLanguage("msil", function(hljs) {
   <span id="file"></span>
   <button onclick="show('csharp')">C#</a>
   <button onclick="show('msil')">MSIL</a>
-  <button onclick="show('peverify')">peverify</a>
+  <!-- <button onclick="show('peverify')">peverify</a> -->
 </div>
 <div id="body">
   <pre class="show"><code class="csharp"></code></pre>
   <pre><code class="msil"></code></pre>
-  <pre><code class="peverify"></code></pre>
+  <div class="peverify"></div>
 </div>
 </body>
 </html>
