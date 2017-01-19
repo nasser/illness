@@ -112,6 +112,11 @@ namespace Illness
 
 		public static DateTime lastWriteTime = new DateTime(0);
 
+		public static string HTMLEncode(string s)
+		{
+			return s.Replace("<", "&lt;").Replace(">", "&gt;");
+		}
+
 		public static void UpdateCaches(string assembly)
 		{
 			var fileInfo = new FileInfo(assembly);
