@@ -68,7 +68,19 @@ namespace Illness
 
 		public static string ToMSIL(string assembly)
 		{
-			return ShellCommand("monodis", assembly, environment);
+			return ToMSIL(assembly, AssemblyResolver);
+		}
+
+		public static string ToMSIL(string assembly, DefaultAssemblyResolver resolver)
+		{
+			var assemblyFile = new FileInfo(assembly);
+			AssemblyDefinition assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyFile.FullName, new ReaderParameters { AssemblyResolver = resolver });
+
+			var output = new StringWriter();
+			var disassembler = new ReflectionDisassembler(new PlainTextOutput(output), false, new CancellationToken());
+			disassembler.WriteModuleContents(assemblyDefinition.MainModule);
+
+			return output.ToString();
 		}
 
 		static string cachedVerification;

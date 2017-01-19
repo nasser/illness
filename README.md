@@ -3,7 +3,7 @@
 Live C#/MSIL disassembler
 
 ## Usage
-Expects `monodis` and `peverify` commands to be available on your PATH.
+Expects `peverify` to be available on your PATH.
 
 ```
 $ mono path/to/Illness.exe assembly.dll path/to/other/assembly/directories...
