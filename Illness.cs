@@ -65,7 +65,6 @@ namespace Illness
 
                 var output = new StringWriter();
                 var disassembler = new ReflectionDisassembler(new PlainTextOutput(output), false, new CancellationToken());
-                disassembler.WriteModuleContents(assemblyDefinition.MainModule);
 
                 return output.ToString();
             }
@@ -92,15 +91,22 @@ namespace Illness
 
         public static string ToCSharp(string assembly, DefaultAssemblyResolver resolver)
         {
-            var assemblyFile = new FileInfo(assembly);
-            AssemblyDefinition assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyFile.FullName, new ReaderParameters { AssemblyResolver = resolver });
+            try
+            {
+                var assemblyFile = new FileInfo(assembly);
+                AssemblyDefinition assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyFile.FullName, new ReaderParameters { AssemblyResolver = resolver });
 
-            var astBuilder = new AstBuilder(new DecompilerContext(assemblyDefinition.MainModule));
-            astBuilder.AddAssembly(assemblyDefinition);
-            var output = new StringWriter();
-            astBuilder.GenerateCode(new PlainTextOutput(output));
+                var astBuilder = new AstBuilder(new DecompilerContext(assemblyDefinition.MainModule));
+                astBuilder.AddAssembly(assemblyDefinition);
+                var output = new StringWriter();
+                astBuilder.GenerateCode(new PlainTextOutput(output));
 
-            return output.ToString();
+                return output.ToString();
+            }
+            catch (DecompilerException ex)
+            {
+                throw new Exception("Could not decompile " + assembly + " to C#", ex);
+            }
         }
 
         public void AddAssemblySearchPath(string path)
