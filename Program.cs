@@ -1,24 +1,16 @@
 ﻿using System;
 using System.Linq;
 using System.IO;
-using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 
-using ICSharpCode.Decompiler;
-using ICSharpCode.Decompiler.Ast;
-using ICSharpCode.Decompiler.Disassembler;
-
-
-using System.Reflection;
-using Mono.Cecil;
-
-using System.Diagnostics;
 using System.Text;
 using System.Net;
 
+using System.Reflection;
 using System.Collections.Generic;
 
 using Mono.Options;
+using Mono.Cecil;
 
 namespace Illness
 {
@@ -26,91 +18,12 @@ namespace Illness
 
 	class MainClass
 	{
-		static readonly DefaultAssemblyResolver AssemblyResolver = new DefaultAssemblyResolver();
-
-		public static string ShellCommand(string cmd, string args, IDictionary<string, string> environment = null)
-		{
-			// http://stackoverflow.com/questions/15234448/run-shell-commands-using-c-sharp-and-get-the-info-into-string
-			var startInfo = new ProcessStartInfo
-			{
-				FileName = cmd,
-				Arguments = args,
-				UseShellExecute = false,
-				RedirectStandardOutput = true,
-				CreateNoWindow = true
-			};
-
-			if (environment != null)
-			{
-				foreach (var kv in environment)
-				{
-					startInfo.EnvironmentVariables.Add(kv.Key, kv.Value);
-				}
-			}
-
-			var proc = new Process();
-			proc.StartInfo = startInfo;
-			proc.Start();
-
-			var sb = new StringBuilder();
-			while (!proc.StandardOutput.EndOfStream)
-			{
-				string line = proc.StandardOutput.ReadLine();
-				sb.AppendLine(line);
-			}
-
-			return sb.ToString();
-		}
-
-		public static Dictionary<string, string> environment = new Dictionary<string, string>();
-
-		static string cachedMSIL;
-
-		public static string ToMSIL(string assembly)
-		{
-			return ToMSIL(assembly, AssemblyResolver);
-		}
-
-		public static string ToMSIL(string assembly, DefaultAssemblyResolver resolver)
-		{
-			var assemblyFile = new FileInfo(assembly);
-			AssemblyDefinition assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyFile.FullName, new ReaderParameters { AssemblyResolver = resolver });
-
-			var output = new StringWriter();
-			var disassembler = new ReflectionDisassembler(new PlainTextOutput(output), false, new CancellationToken());
-			disassembler.WriteModuleContents(assemblyDefinition.MainModule);
-
-			return output.ToString();
-		}
-
-		static string cachedVerification;
-
-		public static string ToVerification(string assembly)
-		{
-			return ShellCommand("peverify", assembly, environment);
-		}
-
-		static string cachedCSharp;
-
-		public static string ToCSharp(string assembly)
-		{
-			return ToCSharp(assembly, AssemblyResolver);
-		}
-
-		public static string ToCSharp(string assembly, DefaultAssemblyResolver resolver)
-		{
-			var assemblyFile = new FileInfo(assembly);
-			AssemblyDefinition assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyFile.FullName, new ReaderParameters { AssemblyResolver = resolver });
-
-			var astBuilder = new AstBuilder(new DecompilerContext(assemblyDefinition.MainModule));
-			astBuilder.AddAssembly(assemblyDefinition);
-			var output = new StringWriter();
-			astBuilder.GenerateCode(new PlainTextOutput(output));
-
-			return output.ToString();
-		}
-
+        public static Illness illness = new Illness();
 		public static DateTime lastWriteTime = new DateTime(0);
+
+        static string cachedMSIL;
+        static string cachedVerification;
+        static string cachedCSharp;
 
 		public static string HTMLEncode(string s)
 		{
@@ -127,11 +40,11 @@ namespace Illness
 
 					Log("Disassembling " + assembly);
 					lastWriteTime = fileInfo.LastWriteTime;
-					cachedVerification = HTMLEncode(ToVerification(assembly));
-					cachedMSIL = HTMLEncode(ToMSIL(assembly));
-					cachedCSharp = HTMLEncode(ToCSharp(assembly));
+                    cachedVerification = HTMLEncode(illness.ToVerification(assembly));
+					cachedMSIL = HTMLEncode(illness.ToMSIL(assembly));
+					cachedCSharp = HTMLEncode(illness.ToCSharp(assembly));
 				}
-				catch (DecompilerException e)
+                catch (Exception e)
 				{
 					Console.Write(e.Message);
 					Console.WriteLine(e.InnerException.Message);
@@ -225,19 +138,19 @@ namespace Illness
 			string monoPath = ".";
 			Log("Watching " + file);
 
-			AssemblyResolver.AddSearchDirectory(fileDirectory);
+            illness.AddAssemblySearchPath(fileDirectory);
 			Log("Resolving from " + fileDirectory);
 			monoPath += Path.PathSeparator + fileDirectory;
 
 			for (int i = 1; i < pathArgs.Length; i++)
 			{
 				string dir = pathArgs[i];
-				AssemblyResolver.AddSearchDirectory(dir);
+				illness.AddAssemblySearchPath(dir);
 				Log("Resolving from " + dir);
 				monoPath += Path.PathSeparator + dir;
 			}
 
-			environment.Add("MONO_PATH", monoPath);
+            illness.AddEnvironmentVariable("MONO_PATH", monoPath);
 			Log("MONO_PATH=" + monoPath);
 
 			var fsw = new FileSystemWatcher(fileDirectory, fileInfo.Name);
