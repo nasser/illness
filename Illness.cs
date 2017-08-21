@@ -304,6 +304,13 @@ namespace Illness
             assemblyResolver.RemoveSearchDirectory(path);
         }
 
+        public string GetEnvironmentVariable(string name)
+        {
+            if (environment.TryGetValue(name, out string result))
+                return result;
+            return null;
+        }
+
         public void AddEnvironmentVariable(string name, string value)
         {
             environment.Add(name, value);
@@ -312,6 +319,18 @@ namespace Illness
         public void RemoveEnvironmentVariable(string name)
         {
             environment.Remove(name);
+        }
+
+        public void ReferenceAssembly(Assembly assembly)
+        {
+            var assemblyDirectory = new FileInfo(AssemblyLocation(assembly)).DirectoryName;
+            AddAssemblySearchPath(assemblyDirectory);
+            var monoPath = GetEnvironmentVariable("MONO_PATH");
+            if (monoPath == null)
+                monoPath = assemblyDirectory;
+            else
+                monoPath = monoPath + Path.PathSeparator + assemblyDirectory;
+            environment["MONO_PATH"] = monoPath;
         }
 
     }
