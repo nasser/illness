@@ -299,7 +299,7 @@ namespace Illness
             assemblyResolver.AddSearchDirectory(assemblyPath.DirectoryName);
         }
 
-        public void AddRemoveSearchPath(string path)
+        public void RemoveSearchPath(string path)
         {
             assemblyResolver.RemoveSearchDirectory(path);
         }
