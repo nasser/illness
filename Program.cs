@@ -35,21 +35,21 @@ namespace Illness
 			var fileInfo = new FileInfo(assembly);
 			if (fileInfo.LastWriteTime > lastWriteTime)
 			{
-				try
-				{
+				// try
+				// {
 
 					Log("Disassembling " + assembly);
 					lastWriteTime = fileInfo.LastWriteTime;
                     cachedVerification = HTMLEncode(illness.ToVerification(assembly));
 					cachedMSIL = HTMLEncode(illness.ToMSIL(assembly));
 					cachedCSharp = HTMLEncode(illness.ToCSharp(assembly));
-				}
-                catch (Exception e)
-				{
-					Console.Write(e.Message);
-					Console.WriteLine(e.InnerException.Message);
-					//Environment.Exit(1);
-				}
+				// }
+        //         catch (Exception e)
+				// {
+				// 	Console.Write(e.Message);
+				// 	Console.WriteLine(e.InnerException?.Message);
+				// 	//Environment.Exit(1);
+				// }
 			}
 		}
 
@@ -100,8 +100,15 @@ namespace Illness
 		static bool verbose = false;
 		static int port = 2718;
 
+		static void Header()
+		{
+			Console.WriteLine(string.Format("Illness {0}", Assembly.GetExecutingAssembly().GetName().Version));
+			Console.WriteLine("Ramsey Nasser, Jan 2016\n");
+		}
+
 		public static void Usage()
 		{
+			Header();
 			Console.WriteLine("illness [OPTIONS] assembly.dll [directory ...]");
 			options.WriteOptionDescriptions(Console.Out);
 			Environment.Exit(0);
@@ -113,14 +120,20 @@ namespace Illness
 				Console.WriteLine(message);
 		}
 
+		enum WriteOption
+		{
+			None, CSharp, MSIL
+		}
+
 		public static void Main(string[] args)
 		{
-			Console.WriteLine(string.Format("Illness {0}", Assembly.GetExecutingAssembly().GetName().Version));
-			Console.WriteLine("Ramsey Nasser, Jan 2016\n");
+			WriteOption writeOption = WriteOption.None;
 
 			options = new OptionSet
 			{
 				{ "v|verbose", "print information while running", v => verbose = true },
+				{ "write-cs", "write C# disassembly to standard output", v => writeOption = WriteOption.CSharp },
+				{ "write-il", "write MSIL disassembly to standard output", v => writeOption = WriteOption.MSIL },
 				{ "p|port=", "port to listen on", p => port = int.Parse(p) },
 				{ "h|help", "show help message", h => Usage() }
 			};
@@ -162,16 +175,27 @@ namespace Illness
 
 			string binDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-			Serve(port, new Routes
+			switch(writeOption)
 			{
-				["/"] = ctx => File.ReadAllText(Path.Combine(binDirectory, "public", "index.html")),
-				["/msil"] = ctx => cachedMSIL,
-				["/cs"] = ctx => cachedCSharp,
-				["/peverify"] = ctx => cachedVerification,
-				["/file"] = ctx => file,
-				["/last-write"] = ctx => lastWriteTime.ToString()
-			});
-
+				case WriteOption.None:
+					Header();
+					Serve(port, new Routes
+					{
+						["/"] = ctx => File.ReadAllText(Path.Combine(binDirectory, "public", "index.html")),
+						["/msil"] = ctx => cachedMSIL,
+						["/cs"] = ctx => cachedCSharp,
+						["/peverify"] = ctx => cachedVerification,
+						["/file"] = ctx => file,
+						["/last-write"] = ctx => lastWriteTime.ToString()
+					});
+					break;
+				case WriteOption.CSharp:
+					Console.Write(cachedCSharp);
+					break;
+				case WriteOption.MSIL:
+					Console.Write(cachedMSIL);
+					break;
+			}
 		}
 	}
 }

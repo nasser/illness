@@ -306,7 +306,8 @@ namespace Illness
 
         public string GetEnvironmentVariable(string name)
         {
-            if (environment.TryGetValue(name, out string result))
+            string result;
+            if (environment.TryGetValue(name, out result))
                 return result;
             return null;
         }
