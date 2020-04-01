@@ -96,29 +96,29 @@ hljs.registerLanguage("msil", function(hljs) {
   }
 </script>
   <style type="text/css">
+  html,
   body {
     font-family: monospace;
     font-size: 12pt;
     margin: 0px;
     overflow: hidden;
+    height: 100%;
   }
   
   #body {
-    /*display: flex;*/
-    /*width: 100%;*/
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
     height: 100%;
+  }
+
+  #output {
+    flex-grow: 9;
   }
   
   pre {
     display: none;
-    /*position: absolute;*/
-    /*left: 0;*/
-    /*top: 20px;*/
-    z-index: -10;
     margin: 0;
-    /*opacity: 0;*/
-    height: 100%;
-    /*width: 100%;*/
   }
   
   code {
@@ -143,12 +143,11 @@ hljs.registerLanguage("msil", function(hljs) {
   
   .peverify {
     color: red;
-    position: fixed;
     bottom: 0;
     background: white;
-    opacity: 0.9;
     padding: 1em;
     white-space: pre-wrap;
+    flex-grow: 1;
   }
   </style>
 </head>
@@ -160,9 +159,12 @@ hljs.registerLanguage("msil", function(hljs) {
   <!-- <button onclick="show('peverify')">peverify</a> -->
 </div>
 <div id="body">
-  <pre class="show"><code class="csharp"></code></pre>
-  <pre><code class="msil"></code></pre>
   <div class="peverify"></div>
+  <div id="output">
+    <pre class="show"><code class="csharp"></code></pre>
+    <pre><code class="msil"></code></pre>
+  </div>
+  
 </div>
 </body>
 </html>
